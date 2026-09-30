@@ -248,6 +248,52 @@ test("setup refuses a managed block shadowed by a higher-priority context file",
   }
 });
 
+test("installer accepts a patch release on a supported CLI line", () => {
+  const directory = temporaryDirectory();
+  try {
+    const agentFile = join(directory, "AGENTS.md");
+    const snippet = join(directory, "instructions.md");
+    writeFileSync(agentFile, "unrelated\n");
+    writeFileSync(snippet, "use @PLUGIN_ROOT@");
+    const plugin = {
+      plugin_id: PLUGIN_ID,
+      plugin_root: ROOT,
+      enabled: true,
+      warnings: [],
+      source: { kind: "github", owner: "dima-m711", repo: "herdr-links" },
+    };
+    for (const version of ["herdr 0.9.0", "herdr 0.9.1"] as const) {
+      const runner: CliRunner = (_binary, arguments_) =>
+        arguments_[0] === "--version" ? result(0, `${version}\n`) : result(0, pluginList([plugin]));
+      const receipt = setup(ROOT, agentFile, snippet, "/fake/herdr", installerRuntime(runner, [[plugin], [plugin]]));
+      assert.equal(receipt.plugin["plugin_id"], PLUGIN_ID);
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("installer refuses an unknown CLI line", () => {
+  const directory = temporaryDirectory();
+  try {
+    const agentFile = join(directory, "AGENTS.md");
+    const snippet = join(directory, "instructions.md");
+    writeFileSync(agentFile, "unrelated\n");
+    writeFileSync(snippet, "use @PLUGIN_ROOT@");
+    for (const version of ["herdr 0.8.2", "herdr 0.10.0"] as const) {
+      const runner: CliRunner = (_binary, arguments_) =>
+        arguments_[0] === "--version" ? result(0, `${version}\n`) : result(0, pluginList([]));
+      assert.throws(
+        () => setup(ROOT, agentFile, snippet, "/fake/herdr", installerRuntime(runner, [[], []])),
+        /unsupported CLI/u,
+      );
+    }
+    assert.equal(readFileSync(agentFile, "utf8"), "unrelated\n");
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test("failed plugin linking rolls back instruction changes", () => {
   const directory = temporaryDirectory();
   try {

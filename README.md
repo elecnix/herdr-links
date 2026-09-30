@@ -7,7 +7,7 @@ Herdr Links creates secure, session-bound links to agents, workspaces, tabs, and
 ## Requirements
 
 - macOS
-- Herdr 0.9.0 or 0.7.5
+- Herdr 0.7.5, or any 0.9 release from 0.9.0 through 0.9.3
 - Node.js 20 or newer, available whenever Herdr or Pi runs the plugin
 - npm, required during installation and updates
 - Pi, if you want agents to generate navigation links automatically
@@ -85,7 +85,7 @@ The handler then sends one allowlisted focus API call. It does not invoke a shel
 
 The fingerprint is a lifetime marker derived from the resolved socket's path and metadata; it is not an authentication secret. The plugin is not a security boundary against another process running as the same operating-system user, because that process already has access to the user's Herdr socket. The runtime makes no HTTP requests.
 
-Only Herdr 0.7.5/protocol 18 and Herdr 0.9.0/protocol 22 are accepted. Unknown or mixed version/protocol pairs fail closed until they have been reviewed and tested.
+The gate accepts Herdr 0.9.0 through 0.9.3 on protocol 22, and Herdr 0.7.5 on protocol 18. A version paired with any other protocol fails closed until it has been reviewed and tested.
 
 ## Uninstall
 

@@ -58,6 +58,7 @@ Its output may contain session-specific identifiers and should remain outside th
 | Herdr release | Protocol | Link scheme | Status |
 |---|---:|---|---|
 | 0.9.0 | 22 | `herdr://navigation/v1/...` | Primary supported runtime |
+| 0.9.1 through 0.9.3 | 22 | `herdr://navigation/v1/...` | Supported runtime, patch releases of the 0.9 line |
 | 0.7.5 | 18 | `https://herdr.invalid/v1/...` | Compatibility runtime |
 
-Other release/protocol pairs fail closed until they are reviewed and tested.
+A version paired with a protocol it was not tested against fails closed until it is reviewed and tested. The 0.9 patch releases share protocol 22 and the same focus methods, so one entry covers them.

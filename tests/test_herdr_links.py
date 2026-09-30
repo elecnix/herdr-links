@@ -161,8 +161,10 @@ class NavigationTest(unittest.TestCase):
                 server.bind(str(path))
                 modern = herdr_links.navigation_url("pane", "wA:pD", path)
                 legacy = herdr_links.navigation_url("pane", "wA:pD", path, version="0.7.5")
+                patch_release = herdr_links.format_navigation_url("pane", "wA:pD", "0" * 64, "0.9.1")
                 self.assertTrue(modern.startswith("herdr://navigation/v1/"))
                 self.assertTrue(legacy.startswith("https://herdr.invalid/v1/"))
+                self.assertTrue(patch_release.startswith("herdr://navigation/v1/"))
                 self.assertEqual(herdr_links.parse_navigation_url(modern)[1:], ("pane", "wA:pD"))
                 self.assertEqual(herdr_links.parse_navigation_url(legacy)[1:], ("pane", "wA:pD"))
                 with self.assertRaisesRegex(herdr_links.HerdrLinksError, "fingerprint"):
@@ -181,7 +183,7 @@ class NavigationTest(unittest.TestCase):
 
             server = FakeHerdrServer(path, responder, 1)
             url = herdr_links.navigation_url("pane", "wA:pD", path)
-            with self.assertRaisesRegex(herdr_links.HerdrLinksError, "require Herdr 0.9.0"):
+            with self.assertRaisesRegex(herdr_links.HerdrLinksError, "require a Herdr 0.9 line runtime"):
                 herdr_links.handle_navigation(invocation_environment(path, url))
             server.finish()
             self.assertEqual([request["method"] for request in server.requests], ["session.snapshot"])
@@ -444,8 +446,8 @@ class NavigationTest(unittest.TestCase):
 
 
 class InstructionFileTest(unittest.TestCase):
-    def test_both_verified_runtime_pairs_are_accepted_but_mixed_pairs_are_not(self):
-        for version, protocol in (("0.7.5", 18), ("0.9.0", 22)):
+    def test_every_supported_runtime_pair_is_accepted_but_mixed_pairs_are_not(self):
+        for version, protocol in (("0.7.5", 18), ("0.9.0", 22), ("0.9.1", 22), ("0.9.2", 22), ("0.9.3", 22)):
             with self.subTest(version=version), tempfile.TemporaryDirectory() as directory:
                 path = Path(directory) / "herdr.sock"
                 snapshot = {**SNAPSHOT, "version": version, "protocol": protocol}
@@ -459,7 +461,7 @@ class InstructionFileTest(unittest.TestCase):
                 )
                 self.assertEqual(herdr_links.get_snapshot(path)["version"], version)
                 server.finish()
-        for version, protocol in (("0.7.5", 22), ("0.9.0", 18), ("0.8.2", 21)):
+        for version, protocol in (("0.7.5", 22), ("0.9.0", 18), ("0.8.2", 21), ("0.9.0", 23), ("0.10.0", 22)):
             with self.subTest(version=version, protocol=protocol), tempfile.TemporaryDirectory() as directory:
                 path = Path(directory) / "herdr.sock"
                 snapshot = {**SNAPSHOT, "version": version, "protocol": protocol}

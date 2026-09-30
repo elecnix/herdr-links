@@ -198,8 +198,10 @@ test("modern and legacy URL schemes parse and reject malformed fingerprints", as
   try {
     const modern = navigationUrl("pane", "wA:pD", path);
     const legacy = navigationUrl("pane", "wA:pD", path, "0.7.5");
+    const patchRelease = formatNavigationUrl("pane", "wA:pD", "0".repeat(64), "0.9.1");
     assert.match(modern, /^herdr:\/\/navigation\/v1\//u);
     assert.match(legacy, /^https:\/\/herdr\.invalid\/v1\//u);
+    assert.match(patchRelease, /^herdr:\/\/navigation\/v1\//u);
     assert.deepEqual(parseNavigationUrl(modern).slice(1), ["pane", "wA:pD"]);
     assert.deepEqual(parseNavigationUrl(legacy).slice(1), ["pane", "wA:pD"]);
     assert.throws(() => formatNavigationUrl("pane", "wA:pD", "bad", "0.9.0"), /fingerprint/u);
@@ -244,7 +246,7 @@ test("custom links are rejected on the legacy runtime before focus", async () =>
       1,
     );
     const url = navigationUrl("pane", "wA:pD", path);
-    await assert.rejects(handleNavigation(invocationEnvironment(path, url)), /require Herdr 0\.9\.0/u);
+    await assert.rejects(handleNavigation(invocationEnvironment(path, url)), /require a Herdr 0\.9 line runtime/u);
     await server.finish();
     assert.deepEqual(server.requests.map((request) => request["method"]), ["session.snapshot"]);
   } finally {
@@ -524,6 +526,8 @@ test("non-sockets and unsupported runtime pairs fail", async () => {
       ["0.7.5", 22],
       ["0.9.0", 18],
       ["0.8.2", 21],
+      ["0.9.0", 23],
+      ["0.10.0", 22],
     ] as const) {
       const path = join(directory, `herdr-${version}-${protocol}.sock`);
       const snapshot = { ...SNAPSHOT, version, protocol };
@@ -540,12 +544,15 @@ test("non-sockets and unsupported runtime pairs fail", async () => {
   }
 });
 
-test("both verified runtime pairs are accepted", async () => {
+test("the 0.9 line and the 0.7.5 compatibility runtime are accepted", async () => {
   const directory = temporaryDirectory();
   try {
     for (const [version, protocol] of [
       ["0.7.5", 18],
       ["0.9.0", 22],
+      ["0.9.1", 22],
+      ["0.9.2", 22],
+      ["0.9.3", 22],
     ] as const) {
       const path = join(directory, `herdr-${version}.sock`);
       const snapshot = { ...SNAPSHOT, version, protocol };
