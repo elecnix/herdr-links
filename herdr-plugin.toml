@@ -5,26 +5,33 @@ min_herdr_version = "0.7.5"
 description = "Session-bound navigation links for agent, workspace, tab, and pane references in Herdr."
 platforms = ["macos"]
 
-[[build]]
-command = ["npm", "ci", "--include=dev", "--ignore-scripts", "--no-audit", "--no-fund"]
+# Commands run through a login shell because Herdr spawns plugin commands with
+# a minimal PATH (/usr/bin:/bin:/usr/sbin:/sbin) that omits the directories a
+# version manager or Homebrew installs node into. A plain `node` then fails
+# with ENOENT and every action reports "No such file or directory (os error 2)".
+# The login shell reads the user's profile, which puts node back on PATH.
+# A shell also means the version-manager shim, not a hardcoded path, is used.
 
 [[build]]
-command = ["npm", "run", "build"]
+command = ["/bin/sh", "-lc", "npm ci --include=dev --ignore-scripts --no-audit --no-fund"]
+
+[[build]]
+command = ["/bin/sh", "-lc", "npm run build"]
 
 [[actions]]
 id = "setup"
 title = "Herdr Links: install Pi instructions"
-command = ["node", "./dist/cli.js", "setup"]
+command = ["/bin/sh", "-lc", "node ./dist/cli.js setup"]
 
 [[actions]]
 id = "cleanup"
 title = "Herdr Links: remove Pi instructions"
-command = ["node", "./dist/cli.js", "cleanup"]
+command = ["/bin/sh", "-lc", "node ./dist/cli.js cleanup"]
 
 [[actions]]
 id = "navigate"
 title = "Herdr Links: navigate clicked reference"
-command = ["node", "./dist/cli.js", "handle"]
+command = ["/bin/sh", "-lc", "node ./dist/cli.js handle"]
 
 [[link_handlers]]
 id = "navigation-v1"
