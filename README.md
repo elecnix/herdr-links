@@ -1,13 +1,15 @@
 # Herdr Links
 
-[![Validate marketplace build](https://github.com/dima-m711/herdr-links/actions/workflows/package.yml/badge.svg?branch=main)](https://github.com/dima-m711/herdr-links/actions/workflows/package.yml)
+[![Validate marketplace build](https://github.com/elecnix/herdr-links/actions/workflows/package.yml/badge.svg?branch=main)](https://github.com/elecnix/herdr-links/actions/workflows/package.yml)
 
 Herdr Links creates secure, session-bound links to agents, workspaces, tabs, and panes in [Herdr](https://herdr.dev). It is designed for reports produced by [Pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent), but any terminal program that renders OSC 8 links can display its output.
+
+This is a fork of [dima-m711/herdr-links](https://github.com/dima-m711/herdr-links). Upstream accepts one runtime pair, `0.9.0/22`. The fork accepts the whole Herdr 0.9 line on protocol 22, versions 0.9.0 through 0.9.3, so a Herdr patch release does not stop link generation or navigation. The fork changes nothing else.
 
 ## Requirements
 
 - macOS
-- Herdr 0.9.0 or 0.7.5
+- Herdr 0.7.5, or any 0.9 release from 0.9.0 through 0.9.3
 - Node.js 20 or newer, available whenever Herdr or Pi runs the plugin
 - npm, required during installation and updates
 - Pi, if you want agents to generate navigation links automatically
@@ -17,7 +19,7 @@ Herdr Links creates secure, session-bound links to agents, workspaces, tabs, and
 Install the plugin from its public GitHub repository:
 
 ```bash
-herdr plugin install dima-m711/herdr-links
+herdr plugin install elecnix/herdr-links
 ```
 
 Then start installation of the managed Pi instructions:
@@ -85,7 +87,7 @@ The handler then sends one allowlisted focus API call. It does not invoke a shel
 
 The fingerprint is a lifetime marker derived from the resolved socket's path and metadata; it is not an authentication secret. The plugin is not a security boundary against another process running as the same operating-system user, because that process already has access to the user's Herdr socket. The runtime makes no HTTP requests.
 
-Only Herdr 0.7.5/protocol 18 and Herdr 0.9.0/protocol 22 are accepted. Unknown or mixed version/protocol pairs fail closed until they have been reviewed and tested.
+Only the 0.9 line on protocol 22, versions 0.9.0 through 0.9.3, and Herdr 0.7.5 on protocol 18 are accepted. A version paired with any other protocol fails closed until it has been reviewed and tested.
 
 ## Uninstall
 
@@ -115,7 +117,7 @@ The old prerelease used plugin ID `dima.herdr-links` and a local/npm registratio
 
 ```bash
 herdr-links uninstall
-herdr plugin install dima-m711/herdr-links
+herdr plugin install elecnix/herdr-links
 herdr plugin action invoke herdr-links.setup
 ```
 
@@ -124,7 +126,7 @@ Do this before replacing the old globally installed package. If the package was 
 ```bash
 herdr-links migrate
 herdr-links uninstall
-herdr plugin install dima-m711/herdr-links
+herdr plugin install elecnix/herdr-links
 herdr plugin action invoke herdr-links.setup
 ```
 

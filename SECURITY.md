@@ -6,7 +6,7 @@ Security fixes are provided for the latest release on the default branch.
 
 ## Reporting a vulnerability
 
-Please report suspected vulnerabilities privately through [GitHub Security Advisories](https://github.com/dima-m711/herdr-links/security/advisories/new). Include the affected version, Herdr version, reproduction steps, and impact when possible.
+Please report suspected vulnerabilities privately through [GitHub Security Advisories](https://github.com/elecnix/herdr-links/security/advisories/new). Include the affected version, Herdr version, reproduction steps, and impact when possible.
 
 Do not include credentials, full socket paths, session fingerprints, or unrelated session data. Do not open a public issue until a fix or coordinated disclosure is available.
 

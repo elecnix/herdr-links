@@ -1,5 +1,5 @@
 {
-  "name": "@dima-m711/herdr-links",
+  "name": "@elecnix/herdr-links",
   "version": "0.4.0",
   "description": "Session-bound navigation links for Pi reports in Herdr",
   "keywords": [
@@ -8,8 +8,8 @@
     "pi",
     "navigation"
   ],
-  "homepage": "https://github.com/dima-m711/herdr-links#readme",
-  "bugs": "https://github.com/dima-m711/herdr-links/issues",
+  "homepage": "https://github.com/elecnix/herdr-links#readme",
+  "bugs": "https://github.com/elecnix/herdr-links/issues",
   "type": "module",
   "bin": {
     "herdr-links": "dist/cli.js"
@@ -43,7 +43,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dima-m711/herdr-links.git"
+    "url": "git+https://github.com/elecnix/herdr-links.git"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com",

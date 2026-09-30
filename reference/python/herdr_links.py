@@ -28,8 +28,9 @@ WORKSPACE_ID = rf"w{ID_NUMBER}"
 PANE_ID = rf"{WORKSPACE_ID}:p{ID_NUMBER}"
 TAB_ID = rf"{WORKSPACE_ID}:t{ID_NUMBER}"
 TARGET_PATTERNS = {"agent": PANE_ID, "pane": PANE_ID, "workspace": WORKSPACE_ID, "tab": TAB_ID}
-SUPPORTED_RUNTIMES = {("0.7.5", 18), ("0.9.0", 22)}
+SUPPORTED_RUNTIMES = {("0.7.5", 18), ("0.9.0", 22), ("0.9.1", 22), ("0.9.2", 22), ("0.9.3", 22)}
 SUPPORTED_CLI_VERSIONS = {f"herdr {version}" for version, _ in SUPPORTED_RUNTIMES}
+CUSTOM_SCHEME_VERSIONS = {"0.9.0", "0.9.1", "0.9.2", "0.9.3"}
 LEGACY_URL_PATTERN = re.compile(
     rf"https://herdr\.invalid/v1/([0-9a-f]{{64}})/(agent|workspace|tab|pane)/({WORKSPACE_ID}(?::[pt]{ID_NUMBER})?)"
 )
@@ -112,7 +113,7 @@ def format_navigation_url(kind: str, target: str, fingerprint: str, version: str
         raise HerdrLinksError("invalid session fingerprint")
     if version == "0.7.5":
         return f"https://herdr.invalid/v1/{fingerprint}/{kind}/{target}"
-    if version == "0.9.0":
+    if version in CUSTOM_SCHEME_VERSIONS:
         return f"herdr://navigation/v1/{fingerprint}/{kind}/{target}"
     raise HerdrLinksError(f"unsupported Herdr {version}; cannot choose a safe link scheme")
 
@@ -238,8 +239,8 @@ def handle_navigation(environment: Mapping[str, str]) -> dict:
     if session_fingerprint(socket_path) != session:
         raise HerdrLinksError("link belongs to a different Herdr session or socket lifetime; regenerate it")
     snapshot = get_snapshot(socket_path)
-    if url.startswith("herdr://") and snapshot.get("version") != "0.9.0":
-        raise HerdrLinksError("custom navigation targets require Herdr 0.9.0; regenerate this link")
+    if url.startswith("herdr://") and snapshot.get("version") not in CUSTOM_SCHEME_VERSIONS:
+        raise HerdrLinksError("custom navigation targets require a Herdr 0.9 line runtime; regenerate this link")
     origin = live_row(snapshot, "panes", "pane_id", context["focused_pane_id"])
     if not origin or any(origin.get(key) != context[key] for key in ("workspace_id", "tab_id")):
         raise HerdrLinksError("clicked pane context is stale or belongs to another session")

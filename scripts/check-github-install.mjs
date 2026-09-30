@@ -80,7 +80,7 @@ try {
         plugin_root: checkout,
         enabled: true,
         warnings: [],
-        source: { kind: "github", owner: "dima-m711", repo: "herdr-links" },
+        source: { kind: "github", owner: "elecnix", repo: "herdr-links" },
       },
     ]),
   );
@@ -93,7 +93,7 @@ fs.appendFileSync(process.env.FAKE_HERDR_LOG, JSON.stringify(args) + "\\n");
 if (args.length === 1 && args[0] === "--version") {
   process.stdout.write("herdr 0.9.0\\n");
 } else if (JSON.stringify(args) === JSON.stringify(["plugin", "list", "--json"])) {
-  process.stdout.write(JSON.stringify({ result: { plugins: [{ plugin_id: "herdr-links", plugin_root: process.env.FAKE_PLUGIN_ROOT, enabled: true, warnings: [], source: { kind: "github", owner: "dima-m711", repo: "herdr-links" } }] } }));
+  process.stdout.write(JSON.stringify({ result: { plugins: [{ plugin_id: "herdr-links", plugin_root: process.env.FAKE_PLUGIN_ROOT, enabled: true, warnings: [], source: { kind: "github", owner: "elecnix", repo: "herdr-links" } }] } }));
 } else {
   process.stderr.write("unexpected fake Herdr call: " + JSON.stringify(args) + "\\n");
   process.exitCode = 91;

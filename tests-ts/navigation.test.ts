@@ -244,7 +244,7 @@ test("custom links are rejected on the legacy runtime before focus", async () =>
       1,
     );
     const url = navigationUrl("pane", "wA:pD", path);
-    await assert.rejects(handleNavigation(invocationEnvironment(path, url)), /require Herdr 0\.9\.0/u);
+    await assert.rejects(handleNavigation(invocationEnvironment(path, url)), /require a Herdr 0\.9 line runtime/u);
     await server.finish();
     assert.deepEqual(server.requests.map((request) => request["method"]), ["session.snapshot"]);
   } finally {
@@ -540,12 +540,15 @@ test("non-sockets and unsupported runtime pairs fail", async () => {
   }
 });
 
-test("both verified runtime pairs are accepted", async () => {
+test("the 0.9 line and the 0.7.5 compatibility runtime are accepted", async () => {
   const directory = temporaryDirectory();
   try {
     for (const [version, protocol] of [
       ["0.7.5", 18],
       ["0.9.0", 22],
+      ["0.9.1", 22],
+      ["0.9.2", 22],
+      ["0.9.3", 22],
     ] as const) {
       const path = join(directory, `herdr-${version}.sock`);
       const snapshot = { ...SNAPSHOT, version, protocol };
