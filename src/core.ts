@@ -575,6 +575,26 @@ function instructionCandidates(environment: Environment): readonly string[] {
   return PI_CONTEXT_FILENAMES.map((filename) => join(directory, filename));
 }
 
+// Claude Code loads one user-level memory file into every session, so the block
+// goes there and applies to every project. The config directory is relocatable,
+// but a relative path is not usable for resolution, so it falls back to the
+// home default.
+export function claudeCodeMemoryFile(environment: Environment): string {
+  const home = environment["HOME"] || homedir();
+  const configured = environment["CLAUDE_CONFIG_DIR"];
+  const directory = configured && isAbsolute(configured) ? configured : join(home, ".claude");
+  return join(directory, "CLAUDE.md");
+}
+
+export const INSTRUCTION_AGENTS = ["claude-code", "pi"] as const;
+export type InstructionAgent = (typeof INSTRUCTION_AGENTS)[number];
+
+export function instructionFileFor(agent: string, environment: Environment): string {
+  if (agent === "claude-code") return claudeCodeMemoryFile(environment);
+  if (agent === "pi") return activeInstructionFile(environment, existingInstructionCandidates(environment));
+  throw new HerdrLinksError(`unsupported agent ${JSON.stringify(agent)}; use one of: ${INSTRUCTION_AGENTS.join(", ")}`);
+}
+
 function existingInstructionCandidates(environment: Environment): readonly string[] {
   const seen = new Set<string>();
   return instructionCandidates(environment).filter((path) => {

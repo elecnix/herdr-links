@@ -2,16 +2,22 @@
 
 import { isAbsolute, join } from "node:path";
 import {
+  INSTRUCTION_AGENTS,
   PLUGIN_ID,
   ROOT,
   VERSION,
   Environment,
   HerdrLinksError,
+  InstructionAgent,
+  InstructionChange,
   cleanup,
   cleanupInstructionFile,
+  claudeCodeMemoryFile,
   findExecutable,
   handleNavigation,
   install,
+  installInstructions,
+  instructionFileFor,
   migrateLegacyRegistration,
   navigationMarkdown,
   setup,
@@ -20,6 +26,12 @@ import {
   uninstall,
   validateTarget,
 } from "./core.js";
+
+const AGENT_LABEL: Readonly<Record<InstructionAgent, string>> = { "claude-code": "Claude Code", pi: "Pi" };
+
+function installClaudeCode(environment: Environment, snippet: string): InstructionChange {
+  return installInstructions(claudeCodeMemoryFile(environment), snippet, ROOT);
+}
 
 const HELP = `Usage: herdr-links <command>
 
@@ -96,36 +108,46 @@ export async function main(
     if (rest.length !== 0) throw new HerdrLinksError(`${command} accepts no arguments`);
 
     if (command === "cleanup") {
-      const agentFile = cleanupInstructionFile(environment);
-      const instructions = cleanup(agentFile);
-      console.log(`Pi instructions: ${instructions.changed ? "removed" : "unchanged"} (${agentFile})`);
-      if (instructions.backup) console.log(`Pre-edit backup: ${instructions.backup}`);
+      for (const agent of INSTRUCTION_AGENTS) {
+        const file = instructionFileFor(agent, environment);
+        const instructions = cleanup(file);
+        console.log(`${AGENT_LABEL[agent]} instructions: ${instructions.changed ? "removed" : "unchanged"} (${file})`);
+        if (instructions.backup) console.log(`Pre-edit backup: ${instructions.backup}`);
+      }
       return 0;
     }
 
     const binary = herdrBinary(environment);
     const agentFile = command === "uninstall" ? cleanupInstructionFile(environment) : setupInstructionFile(environment);
+    const snippet = join(ROOT, "agent-instructions.md");
+    const report = (target: InstructionAgent, receipt: InstructionChange): void => {
+      console.log(`${AGENT_LABEL[target]} instructions: ${receipt.changed ? "updated" : "unchanged"} (${instructionFileFor(target, environment)})`);
+      if (receipt.backup) console.log(`Pre-edit backup: ${receipt.backup}`);
+    };
+    // Pi edits and the plugin registration share one transaction, so that path
+    // keeps its original call. Claude Code shares no transaction with the
+    // plugin, so its memory file is edited separately, after the Pi edit lands.
     if (command === "migrate") {
       const migration = migrateLegacyRegistration(ROOT, binary);
-      const receipt = setup(ROOT, agentFile, join(ROOT, "agent-instructions.md"), binary);
+      const receipt = setup(ROOT, agentFile, snippet, binary);
       console.log(`${migration.changed ? "Migrated" : "Verified"} ${PLUGIN_ID} at ${ROOT}`);
-      console.log(`Pi instructions: ${receipt.instructions.changed ? "updated" : "unchanged"} (${agentFile})`);
-      if (receipt.instructions.backup) console.log(`Pre-edit backup: ${receipt.instructions.backup}`);
+      report("pi", receipt.instructions);
+      report("claude-code", installClaudeCode(environment, snippet));
     } else if (command === "setup") {
-      const receipt = setup(ROOT, agentFile, join(ROOT, "agent-instructions.md"), binary);
+      const receipt = setup(ROOT, agentFile, snippet, binary);
       console.log(`Configured ${PLUGIN_ID} from ${ROOT}`);
-      console.log(`Pi instructions: ${receipt.instructions.changed ? "updated" : "unchanged"} (${agentFile})`);
-      if (receipt.instructions.backup) console.log(`Pre-edit backup: ${receipt.instructions.backup}`);
+      report("pi", receipt.instructions);
+      report("claude-code", installClaudeCode(environment, snippet));
     } else if (command === "install") {
-      const receipt = install(ROOT, agentFile, join(ROOT, "agent-instructions.md"), binary);
+      const receipt = install(ROOT, agentFile, snippet, binary);
       console.log(`Installed ${PLUGIN_ID} from ${ROOT}`);
-      console.log(`Pi instructions: ${receipt.instructions.changed ? "updated" : "unchanged"} (${agentFile})`);
-      if (receipt.instructions.backup) console.log(`Pre-edit backup: ${receipt.instructions.backup}`);
+      report("pi", receipt.instructions);
+      report("claude-code", installClaudeCode(environment, snippet));
     } else {
       const receipt = uninstall(agentFile, binary);
       console.log(`Uninstalled ${PLUGIN_ID}; unrelated plugins and instructions preserved`);
-      console.log(`Pi instructions: ${receipt.instructions.changed ? "updated" : "unchanged"} (${agentFile})`);
-      if (receipt.instructions.backup) console.log(`Pre-edit backup: ${receipt.instructions.backup}`);
+      report("pi", receipt.instructions);
+      report("claude-code", cleanup(claudeCodeMemoryFile(environment)));
     }
     return 0;
   } catch (error) {
