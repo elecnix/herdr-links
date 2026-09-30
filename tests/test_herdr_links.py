@@ -777,7 +777,7 @@ class InstallerTest(unittest.TestCase):
 
 
 class ManifestTest(unittest.TestCase):
-    def test_manifest_handler_is_narrow_and_shell_free(self):
+    def test_manifest_handler_is_narrow_and_reaches_node_through_a_login_shell(self):
         with (ROOT / "herdr-plugin.toml").open("rb") as file:
             manifest = tomllib.load(file)
         self.assertEqual(manifest["id"], herdr_links.PLUGIN_ID)
@@ -787,14 +787,21 @@ class ManifestTest(unittest.TestCase):
         self.assertEqual(
             [entry["command"] for entry in manifest["build"]],
             [
-                ["npm", "ci", "--include=dev", "--ignore-scripts", "--no-audit", "--no-fund"],
-                ["npm", "run", "build"],
+                ["/bin/sh", "-lc", "npm ci --include=dev --ignore-scripts --no-audit --no-fund"],
+                ["/bin/sh", "-lc", "npm run build"],
             ],
         )
         actions = {action["id"]: action["command"] for action in manifest["actions"]}
-        self.assertEqual(actions["setup"], ["node", "./dist/cli.js", "setup"])
-        self.assertEqual(actions["cleanup"], ["node", "./dist/cli.js", "cleanup"])
-        self.assertEqual(actions["navigate"], ["node", "./dist/cli.js", "handle"])
+        self.assertEqual(actions["setup"], ["/bin/sh", "-lc", "node ./dist/cli.js setup"])
+        self.assertEqual(actions["cleanup"], ["/bin/sh", "-lc", "node ./dist/cli.js cleanup"])
+        self.assertEqual(actions["navigate"], ["/bin/sh", "-lc", "node ./dist/cli.js handle"])
+        # Every command must go through a login shell. Herdr spawns plugin
+        # commands with PATH=/usr/bin:/bin:/usr/sbin:/sbin, which cannot resolve
+        # node, so a bare "node" argv entry fails with ENOENT on every click.
+        for entry in [*manifest["build"], *manifest["actions"]]:
+            command = entry["command"]
+            self.assertNotIn(command[0], ("node", "npm"), f"{entry} bypasses the login shell")
+            self.assertIn("l", command[1].lstrip("-"), f"{entry} does not start a login shell")
         self.assertEqual(manifest["link_handlers"][0]["action"], herdr_links.ACTION_ID)
         self.assertTrue(manifest["link_handlers"][0]["pattern"].endswith("$"))
         pattern = re.compile(manifest["link_handlers"][0]["pattern"])
