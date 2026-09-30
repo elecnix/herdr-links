@@ -2,17 +2,19 @@
 
 [![Validate marketplace build](https://github.com/elecnix/herdr-links/actions/workflows/package.yml/badge.svg?branch=main)](https://github.com/elecnix/herdr-links/actions/workflows/package.yml)
 
-Herdr Links creates secure, session-bound links to agents, workspaces, tabs, and panes in [Herdr](https://herdr.dev). It is designed for reports produced by [Pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent), but any terminal program that renders OSC 8 links can display its output.
+Herdr Links creates secure, session-bound links to agents, workspaces, tabs, and panes in [Herdr](https://herdr.dev). An agent that renders OSC 8 links can display them, so reports from [Pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) and Claude Code both become navigable.
 
-This is a fork of [dima-m711/herdr-links](https://github.com/dima-m711/herdr-links). Upstream accepts one runtime pair, `0.9.0/22`. The fork accepts the whole Herdr 0.9 line on protocol 22, versions 0.9.0 through 0.9.3, so a Herdr patch release does not stop link generation or navigation. The fork changes nothing else.
+Beyond upstream, this fork accepts the whole Herdr 0.9 line on protocol 22, versions 0.9.0 through 0.9.3, instead of one runtime pair, so a Herdr patch release does not stop link generation or navigation. It also installs instructions for Claude Code alongside Pi instead of Pi alone.
 
 ## Requirements
 
 - macOS
 - Herdr 0.7.5, or any 0.9 release from 0.9.0 through 0.9.3
-- Node.js 20 or newer, available whenever Herdr or Pi runs the plugin
+- Node.js 20 or newer, available whenever Herdr, Pi, or Claude Code runs the plugin
 - npm, required during installation and updates
-- Pi, if you want agents to generate navigation links automatically
+- Pi or Claude Code, if you want agents to generate navigation links automatically
+
+The `setup` action writes one managed block to each agent it finds: `~/.pi/agent/AGENTS.md` for Pi, and `~/.claude/CLAUDE.md` for Claude Code (or `<CLAUDE_CONFIG_DIR>/CLAUDE.md` when that variable sets an absolute path). Both blocks contain the same text. `cleanup` removes both.
 
 ## Install
 
@@ -22,7 +24,7 @@ Install the plugin from its public GitHub repository:
 herdr plugin install elecnix/herdr-links
 ```
 
-Then start installation of the managed Pi instructions:
+Then start installation of the managed agent instructions:
 
 ```bash
 herdr plugin action invoke herdr-links.setup
@@ -34,7 +36,7 @@ Herdr actions are asynchronous. The invocation returns a `log_id`; before contin
 herdr plugin log list --plugin herdr-links --limit 20
 ```
 
-Do not reload Pi after a failed or still-running setup. After setup succeeds, run `/reload` in existing idle Pi sessions, or restart them. Confirm the plugin is enabled and warning-free:
+Do not reload an agent after a failed or still-running setup. After setup succeeds, run `/reload` in existing idle Pi sessions, or restart them. Confirm the plugin is enabled and warning-free:
 
 ```bash
 herdr plugin list --plugin herdr-links --json
@@ -42,13 +44,13 @@ herdr plugin list --plugin herdr-links --json
 
 Herdr clones the repository and runs the locked manifest build: `npm ci` with lifecycle scripts disabled, followed by `npm run build`. Compiled output is generated inside Herdr's managed checkout and is not committed to this repository.
 
-Re-run the install and setup commands to update the plugin, and wait for the new setup log before reloading Pi. Setup replaces a single managed instruction block and preserves the GitHub-managed plugin registration; it never converts that registration into a local link.
+Re-run the install and setup commands to update the plugin, and wait for the new setup log before reloading an agent. Setup replaces a single managed instruction block in each agent's file and preserves the GitHub-managed plugin registration; it never converts that registration into a local link.
 
 ## Use
 
-Ask Pi to reference a live Herdr target. The generated Markdown label becomes navigable when rendered in Pi.
+Ask the agent to reference a live Herdr target. The generated Markdown label becomes navigable when rendered in Pi or Claude Code.
 
-**Hold Control and left-click the link, including on macOS.** Herdr must have mouse capture enabled. Ordinary Pi fullscreen clicks and terminal-native link gestures bypass Herdr navigation.
+**Hold Control and left-click the link, including on macOS.** Herdr must have mouse capture enabled. A fullscreen agent UI may consume the click, and terminal-native link gestures bypass Herdr navigation.
 
 | Reference | Accepted target | Focus operation |
 |---|---|---|
@@ -109,7 +111,7 @@ Only after that exact cleanup log succeeds, uninstall the GitHub-managed plugin:
 herdr plugin uninstall herdr-links
 ```
 
-Do not uninstall after a failed or still-running cleanup: removing the managed checkout first can leave Pi instructions pointing to missing files. Reload or restart existing Pi sessions afterward. Cleanup removes only the managed Herdr Links block. Unrelated instructions and its non-overwritten pre-edit backups remain.
+Do not uninstall after a failed or still-running cleanup: removing the managed checkout first can leave agent instructions pointing to missing files. Reload or restart existing sessions afterward. Cleanup removes only the managed Herdr Links block. Unrelated instructions and its non-overwritten pre-edit backups remain.
 
 ### Migrating from the private 0.3 prerelease
 
@@ -130,7 +132,7 @@ herdr plugin install elecnix/herdr-links
 herdr plugin action invoke herdr-links.setup
 ```
 
-Migration removes the legacy registry key through Herdr's CLI, links and verifies the renamed local manifest, and refreshes the managed Pi instructions. It refuses GitHub-managed or ambiguous registrations.
+Migration removes the legacy registry key through Herdr's CLI, links and verifies the renamed local manifest, and refreshes the managed agent instructions. It refuses GitHub-managed or ambiguous registrations.
 
 ## Develop locally
 
