@@ -561,3 +561,59 @@ test("both verified runtime pairs are accepted", async () => {
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+test("a link may omit the session fingerprint", async () => {
+  const directory = temporaryDirectory();
+  const path = join(directory, "herdr.sock");
+  const server = await FakeHerdrServer.start(path, successResponder, 2);
+  try {
+    const url = "https://herdr.invalid/v1/tab/wA:tB";
+    assert.deepEqual(parseNavigationUrl(url), [null, "tab", "wA:tB"]);
+    const result = await handleNavigation(invocationEnvironment(path, url));
+    assert.equal(result["type"], "tab_info");
+    await server.finish();
+    assert.deepEqual(server.requests.map((request) => request["method"]), ["session.snapshot", "tab.focus"]);
+    assert.deepEqual(server.requests[1]?.["params"], { tab_id: "wA:tB" });
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("the custom scheme may also omit the fingerprint", () => {
+  assert.deepEqual(parseNavigationUrl("herdr://navigation/v1/workspace/wA"), [null, "workspace", "wA"]);
+});
+
+test("an omitted fingerprint still requires a live target", async () => {
+  const directory = temporaryDirectory();
+  const path = join(directory, "herdr.sock");
+  const server = await FakeHerdrServer.start(path, successResponder, 1);
+  try {
+    const url = "https://herdr.invalid/v1/pane/wA:pE";
+    await assert.rejects(handleNavigation(invocationEnvironment(path, url)), /not live/u);
+    await server.finish();
+    assert.deepEqual(server.requests.map((request) => request["method"]), ["session.snapshot"]);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("an omitted fingerprint survives the socket replacement that invalidates a bound link", async () => {
+  const directory = temporaryDirectory();
+  try {
+    const path = join(directory, "herdr.sock");
+    const first = await FakeHerdrServer.start(path, successResponder, 0);
+    await first.stop();
+    const second = await FakeHerdrServer.start(path, successResponder, 2);
+    try {
+      const url = "https://herdr.invalid/v1/pane/wA:pD";
+      const result = await handleNavigation(invocationEnvironment(path, url));
+      assert.equal(result["type"], "pane_info");
+      await second.finish();
+      assert.deepEqual(second.requests.map((request) => request["method"]), ["session.snapshot", "pane.focus"]);
+    } finally {
+      await second.stop();
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});

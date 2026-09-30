@@ -55,19 +55,23 @@ Ask Pi to reference a live Herdr target. The generated Markdown label becomes na
 | Tab | Tab ID | Focus the tab and its remembered pane |
 | Pane | Any live pane ID | Focus the exact pane |
 
-Agent names and `terminal_id` values are not accepted. IDs are opaque, case-sensitive, and session-scoped. Always generate a fresh link after Herdr restarts or a target moves or closes.
+Agent names and `terminal_id` values are not accepted. IDs are opaque, case-sensitive, and session-scoped. Always generate a fresh link after a target moves or closes.
 
 Herdr 0.9 links use a private URL scheme:
 
 ```text
-herdr://navigation/v1/<session-fingerprint>/<agent|workspace|tab|pane>/<public-id>
+herdr://navigation/v1/[<session-fingerprint>/]<agent|workspace|tab|pane>/<public-id>
 ```
 
 Herdr 0.7.5 uses a reserved HTTPS compatibility form because that release rejects custom schemes:
 
 ```text
-https://herdr.invalid/v1/<session-fingerprint>/<agent|workspace|tab|pane>/<public-id>
+https://herdr.invalid/v1/[<session-fingerprint>/]<agent|workspace|tab|pane>/<public-id>
 ```
+
+The session fingerprint is optional. When a link includes one, the handler binds it to the socket which minted it and refuses the link after Herdr recreates that socket. When a link omits it, the handler skips that comparison, so you can write the URL without running the plugin's `link` subcommand for a digest. The live-target check still runs for both forms.
+
+The fingerprint digests the socket file alone: its resolved path, device, inode, and change time. Tab, pane, and focus churn leaves it unchanged, so it goes stale only when Herdr recreates the socket. Omitting it gives up that binding. A target ID includes its workspace prefix, and Herdr never reuses a closed tab or pane ID, so a stale link has no live target to focus.
 
 ## Security model
 
@@ -75,7 +79,7 @@ A link is a narrowly validated focus request, not a command. Before focusing any
 
 - the complete URL and target-ID grammar
 - the invoking plugin, action, link handler, and source-pane context
-- the user-owned Herdr Unix socket and its current lifetime fingerprint
+- the user-owned Herdr Unix socket, and its lifetime fingerprint when the link includes one
 - the supported Herdr version/protocol pair
 - the live source pane and requested target
 - agent membership for agent links

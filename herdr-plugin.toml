@@ -29,5 +29,5 @@ command = ["node", "./dist/cli.js", "handle"]
 [[link_handlers]]
 id = "navigation-v1"
 title = "Navigate a verified local Herdr reference"
-pattern = '^(?:https://herdr\.invalid/v1|herdr://navigation/v1)/[0-9a-f]{64}/(?:(?:agent|pane)/w[0-9A-HJKMNP-TV-Z]{1,13}:p[0-9A-HJKMNP-TV-Z]{1,13}|workspace/w[0-9A-HJKMNP-TV-Z]{1,13}|tab/w[0-9A-HJKMNP-TV-Z]{1,13}:t[0-9A-HJKMNP-TV-Z]{1,13})$'
+pattern = '^(?:https://herdr\.invalid/v1|herdr://navigation/v1)/(?:[0-9a-f]{64}/)?(?:(?:agent|pane)/w[0-9A-HJKMNP-TV-Z]{1,13}:p[0-9A-HJKMNP-TV-Z]{1,13}|workspace/w[0-9A-HJKMNP-TV-Z]{1,13}|tab/w[0-9A-HJKMNP-TV-Z]{1,13}:t[0-9A-HJKMNP-TV-Z]{1,13})$'
 action = "navigate"
