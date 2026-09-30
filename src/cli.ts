@@ -37,7 +37,7 @@ const HELP = `Usage: herdr-links <command>
 
 Commands:
   handle
-  link <agent|workspace|tab|pane> <ID> [--label <text>]
+  link <agent|workspace|tab|pane> <ID> [--label <text>] [--scheme https]
   setup
   cleanup
   install
@@ -49,17 +49,26 @@ interface LinkArguments {
   kind: string;
   target: string;
   label?: string;
+  scheme?: string;
 }
 
 function parseLinkArguments(arguments_: readonly string[]): LinkArguments {
   const [kind, target, ...options] = arguments_;
   if (!kind || !target) throw new HerdrLinksError("link requires a target kind and public ID");
   validateTarget(kind, target);
-  if (options.length === 0) return { kind, target };
-  if (options.length !== 2 || options[0] !== "--label" || options[1] === undefined) {
-    throw new HerdrLinksError("link accepts only one optional --label value");
+  const parsed: LinkArguments = { kind, target };
+  for (let index = 0; index < options.length; index += 2) {
+    const flag = options[index];
+    const value = options[index + 1];
+    if (value === undefined) throw new HerdrLinksError(`link flag ${String(flag)} needs a value`);
+    if (flag === "--label") parsed.label = value;
+    else if (flag === "--scheme") parsed.scheme = value;
+    else throw new HerdrLinksError(`unknown link flag ${String(flag)}`);
   }
-  return { kind, target, label: options[1] };
+  if (parsed.scheme !== undefined && parsed.scheme !== "https") {
+    throw new HerdrLinksError('link --scheme accepts only "https"');
+  }
+  return parsed;
 }
 
 function herdrBinary(environment: Environment): string {
@@ -97,8 +106,15 @@ export async function main(
     }
 
     if (command === "link") {
-      const { kind, target, label } = parseLinkArguments(rest);
-      console.log(await navigationMarkdown(kind, target, label, socketFromEnvironment(environment)));
+      const { kind, target, label, scheme } = parseLinkArguments(rest);
+      const markdown = await navigationMarkdown(
+        kind,
+        target,
+        label,
+        socketFromEnvironment(environment),
+        scheme === "https",
+      );
+      console.log(markdown);
       return 0;
     }
 

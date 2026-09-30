@@ -513,6 +513,21 @@ test("Markdown generation validates live targets and escapes labels", async () =
   }
 });
 
+test("Markdown generation can force the https compatibility form", async () => {
+  const directory = temporaryDirectory();
+  try {
+    const path = join(directory, "herdr.sock");
+    const server = await FakeHerdrServer.start(path, successResponder, 1);
+    const expectedUrl = navigationUrl("tab", "wA:tB", path, "0.7.5");
+    const markdown = await navigationMarkdown("tab", "wA:tB", "key instructions", path, true);
+    await server.finish();
+    assert.match(markdown, /^\[key instructions\]\(https:\/\/herdr\.invalid\/v1\//u);
+    assert.equal(markdown, `[key instructions](${expectedUrl})`);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test("non-sockets and unsupported runtime pairs fail", async () => {
   const directory = temporaryDirectory();
   try {

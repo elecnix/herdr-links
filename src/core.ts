@@ -450,6 +450,7 @@ export async function navigationMarkdown(
   target: string,
   label: string | undefined,
   socketPath: string,
+  compatibilityScheme = false,
 ): Promise<string> {
   validateTarget(kind, target);
   const visibleLabel = label ?? target;
@@ -459,7 +460,9 @@ export async function navigationMarkdown(
   const fingerprint = sessionFingerprint(socketPath);
   const snapshot = await getSnapshot(socketPath);
   validateLiveTarget(snapshot, kind, target);
-  const version = requiredString(snapshot["version"], "invalid snapshot version");
+  const version = compatibilityScheme
+    ? "0.7.5"
+    : requiredString(snapshot["version"], "invalid snapshot version");
   const url = formatNavigationUrl(kind, target, fingerprint, version);
   if (sessionFingerprint(socketPath) !== fingerprint) {
     throw new HerdrLinksError("Herdr socket changed while generating the link; retry");
