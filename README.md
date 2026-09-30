@@ -52,7 +52,7 @@ Re-run the install and setup commands to update the plugin, and wait for the new
 
 Ask the agent to reference a live Herdr target. The generated Markdown label becomes navigable when rendered in Pi or Claude Code.
 
-**Hold Control and left-click the link, including on macOS.** On macOS, Command-click belongs to the outer terminal, which opens a browser and never reaches Herdr. Herdr must have mouse capture enabled. A fullscreen agent UI may consume the click. Holding Control over a link underlines it, which is a useful way to check that Herdr sees the link before you click it.
+**Hold Control and left-click the link, including on macOS.** On macOS, Command-click belongs to the outer terminal, so it opens a browser while Herdr never sees the click. Herdr must have mouse capture enabled. A fullscreen agent UI may consume the click. Holding Control over a link underlines it, which is a useful way to check that Herdr sees the link before you click it.
 
 | Reference | Accepted target | Focus operation |
 |---|---|---|
