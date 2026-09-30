@@ -528,6 +528,27 @@ test("Markdown generation can force the https compatibility form", async () => {
   }
 });
 
+test("a link may omit the session fingerprint", async () => {
+  const directory = temporaryDirectory();
+  const path = join(directory, "herdr.sock");
+  const server = await FakeHerdrServer.start(path, successResponder, 2);
+  try {
+    const url = "https://herdr.invalid/v1/tab/wA:tB";
+    assert.deepEqual(parseNavigationUrl(url), [null, "tab", "wA:tB"]);
+    const result = await handleNavigation(invocationEnvironment(path, url));
+    assert.equal(result["type"], "tab_info");
+    await server.finish();
+    assert.deepEqual(server.requests.map((request) => request["method"]), ["session.snapshot", "tab.focus"]);
+    assert.deepEqual(server.requests[1]?.["params"], { tab_id: "wA:tB" });
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("the custom scheme may also omit the fingerprint", () => {
+  assert.deepEqual(parseNavigationUrl("herdr://navigation/v1/workspace/wA"), [null, "workspace", "wA"]);
+});
+
 test("non-sockets and unsupported runtime pairs fail", async () => {
   const directory = temporaryDirectory();
   try {

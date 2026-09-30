@@ -117,15 +117,21 @@ if (args.length === 1 && args[0] === "--version") {
     FAKE_HERDR_LOG: fakeLog,
     FAKE_PLUGIN_ROOT: checkout,
   };
+  // The block is self-contained: an agent writes the link itself, so the text no
+  // longer references the managed checkout. Assert the installed content matches
+  // the shipped snippet rather than a path it no longer contains.
+  const snippet = readFileSync(join(checkout, "agent-instructions.md"), "utf8")
+    .replaceAll("@PLUGIN_ROOT@", checkout)
+    .trim();
   run("node", ["./dist/cli.js", "setup"], { cwd: checkout, env: setupEnvironment, capture: true });
   const instructionFile = join(piAgentDirectory, "AGENTS.md");
   const instructions = readFileSync(instructionFile, "utf8");
-  if (!instructions.includes(checkout) || !instructions.includes("<!-- BEGIN HERDR LINKS -->")) {
+  if (!instructions.includes(snippet) || !instructions.includes("<!-- BEGIN HERDR LINKS -->")) {
     throw new Error("setup did not install managed Pi instructions from the managed checkout");
   }
   const claudeFile = join(claudeConfigDirectory, "CLAUDE.md");
   const claudeInstructions = readFileSync(claudeFile, "utf8");
-  if (!claudeInstructions.includes(checkout) || !claudeInstructions.includes("<!-- BEGIN HERDR LINKS -->")) {
+  if (!claudeInstructions.includes(snippet) || !claudeInstructions.includes("<!-- BEGIN HERDR LINKS -->")) {
     throw new Error("setup did not install managed Claude Code instructions from the managed checkout");
   }
   const herdrCalls = readFileSync(fakeLog, "utf8")

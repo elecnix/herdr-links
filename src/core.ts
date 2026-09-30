@@ -49,10 +49,10 @@ const TARGET_PATTERNS: Readonly<Record<TargetKind, RegExp>> = {
 };
 
 const LEGACY_URL_PATTERN = new RegExp(
-  `^https://herdr\\.invalid/v1/([0-9a-f]{64})/(agent|workspace|tab|pane)/(${WORKSPACE_ID}(?::[pt]${ID_NUMBER})?)$`,
+  `^https://herdr\\.invalid/v1/(?:([0-9a-f]{64})/)?(agent|workspace|tab|pane)/(${WORKSPACE_ID}(?::[pt]${ID_NUMBER})?)$`,
 );
 const CUSTOM_URL_PATTERN = new RegExp(
-  `^herdr://navigation/v1/([0-9a-f]{64})/(agent|workspace|tab|pane)/(${WORKSPACE_ID}(?::[pt]${ID_NUMBER})?)$`,
+  `^herdr://navigation/v1/(?:([0-9a-f]{64})/)?(agent|workspace|tab|pane)/(${WORKSPACE_ID}(?::[pt]${ID_NUMBER})?)$`,
 );
 
 // Runtime pairs verified against this plugin. A version may pair with more than
@@ -194,13 +194,19 @@ export function validateTarget(kind: string, target: unknown): asserts kind is T
   }
 }
 
-export function parseNavigationUrl(url: unknown): readonly [string, TargetKind, string] {
+// The session fingerprint is optional. A link with one is bound to the socket
+// that minted it and is rejected after the socket is recreated. A link without
+// one skips that check, which saves an agent the hash computation at the cost
+// of letting a stale link resolve. Herdr never reuses a closed tab or pane ID,
+// and the target ID carries its workspace, so an omitted fingerprint cannot
+// focus the wrong location.
+export function parseNavigationUrl(url: unknown): readonly [string | null, TargetKind, string] {
   if (typeof url !== "string" || url.length > 200) throw new HerdrLinksError("malformed navigation URL");
   const match = CUSTOM_URL_PATTERN.exec(url) ?? LEGACY_URL_PATTERN.exec(url);
   if (!match) {
     throw new HerdrLinksError("malformed navigation URL; only exact Herdr Links v1 targets are supported");
   }
-  const session = requiredString(match[1], "malformed navigation URL");
+  const session = match[1] === undefined ? null : requiredString(match[1], "malformed navigation URL");
   const kind = requiredString(match[2], "malformed navigation URL");
   const target = requiredString(match[3], "malformed navigation URL");
   validateTarget(kind, target);
@@ -425,7 +431,9 @@ export async function handleNavigation(environment: Environment): Promise<JsonOb
   const [session, kind, target] = parseNavigationUrl(url);
   const context = clickContext(environment, url);
   const socketPath = socketFromEnvironment(environment);
-  if (sessionFingerprint(socketPath) !== session) {
+  // A null session means the link omitted the fingerprint and asks to skip the
+  // binding check. The socket-stability check below still runs when one is present.
+  if (session !== null && sessionFingerprint(socketPath) !== session) {
     throw new HerdrLinksError("link belongs to a different Herdr session or socket lifetime; regenerate it");
   }
   const snapshot = await getSnapshot(socketPath);
@@ -438,11 +446,11 @@ export async function handleNavigation(environment: Environment): Promise<JsonOb
     throw new HerdrLinksError("clicked pane context is stale or belongs to another session");
   }
   validateLiveTarget(snapshot, kind, target);
-  if (sessionFingerprint(socketPath) !== session) {
+  if (session !== null && sessionFingerprint(socketPath) !== session) {
     throw new HerdrLinksError("Herdr socket changed during navigation; regenerate the link");
   }
   const [method, parameter, expectedType] = FOCUS_METHODS[kind];
-  return await apiRequest(socketPath, method, { [parameter]: target }, expectedType, session);
+  return await apiRequest(socketPath, method, { [parameter]: target }, expectedType, session ?? undefined);
 }
 
 export async function navigationMarkdown(
