@@ -44,13 +44,15 @@ herdr plugin list --plugin herdr-links --json
 
 Herdr clones the repository and runs the locked manifest build: `npm ci` with lifecycle scripts disabled, followed by `npm run build`. Compiled output is generated inside Herdr's managed checkout and is not committed to this repository.
 
+Every command in the manifest runs through a login shell, as in `/bin/sh -lc "node ./dist/cli.js handle"`. Herdr spawns plugin commands with a minimal `PATH` of `/usr/bin:/bin:/usr/sbin:/sbin`, which omits the directories a version manager or Homebrew installs `node` into. A bare `node` argv entry then fails with ENOENT, and every action logs `No such file or directory (os error 2)` while Herdr falls back to its own handling. The login shell reads the user profile, which puts `node` back on `PATH`. `scripts/check-package.mjs` fails the build if a `node` or `npm` command stops going through a login shell.
+
 Re-run the install and setup commands to update the plugin, and wait for the new setup log before reloading an agent. Setup replaces a single managed instruction block in each agent's file and preserves the GitHub-managed plugin registration; it never converts that registration into a local link.
 
 ## Use
 
 Ask the agent to reference a live Herdr target. The generated Markdown label becomes navigable when rendered in Pi or Claude Code.
 
-**Hold Control and left-click the link, including on macOS.** Herdr must have mouse capture enabled. A fullscreen agent UI may consume the click, and terminal-native link gestures bypass Herdr navigation.
+**Hold Control and left-click the link, including on macOS.** On macOS, Command-click belongs to the outer terminal, which opens a browser and never reaches Herdr. Herdr must have mouse capture enabled. A fullscreen agent UI may consume the click. Holding Control over a link underlines it, which is a useful way to check that Herdr sees the link before you click it.
 
 | Reference | Accepted target | Focus operation |
 |---|---|---|

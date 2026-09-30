@@ -834,11 +834,11 @@ test("manifest, package and parser remain aligned", () => {
   assert.equal(LEGACY_PLUGIN_ID, "dima.herdr-links");
   assert.match(manifest, new RegExp(`^version = "${VERSION}"$`, "mu"));
   assert.equal(packageJson["version"], VERSION);
-  assert.match(manifest, /command = \["npm", "ci", "--include=dev", "--ignore-scripts", "--no-audit", "--no-fund"\]/u);
-  assert.match(manifest, /command = \["npm", "run", "build"\]/u);
-  assert.match(manifest, /id = "setup"[\s\S]+command = \["node", "\.\/dist\/cli\.js", "setup"\]/u);
-  assert.match(manifest, /id = "cleanup"[\s\S]+command = \["node", "\.\/dist\/cli\.js", "cleanup"\]/u);
-  assert.match(manifest, /command = \["node", "\.\/dist\/cli\.js", "handle"\]/u);
+  assert.match(manifest, /command = \["\/bin\/sh", "-lc", "npm ci --include=dev --ignore-scripts --no-audit --no-fund"\]/u);
+  assert.match(manifest, /command = \["\/bin\/sh", "-lc", "npm run build"\]/u);
+  assert.match(manifest, /id = "setup"[\s\S]+command = \["\/bin\/sh", "-lc", "node \.\/dist\/cli\.js setup"\]/u);
+  assert.match(manifest, /id = "cleanup"[\s\S]+command = \["\/bin\/sh", "-lc", "node \.\/dist\/cli\.js cleanup"\]/u);
+  assert.match(manifest, /command = \["\/bin\/sh", "-lc", "node \.\/dist\/cli\.js handle"\]/u);
   assert.match(manifest, new RegExp(`^id = "${PLUGIN_ID}"$`, "mu"));
   assert.match(manifest, new RegExp(`action = "${ACTION_ID}"`, "u"));
   assert.match(manifest, new RegExp(`id = "${LINK_HANDLER_ID}"`, "u"));
