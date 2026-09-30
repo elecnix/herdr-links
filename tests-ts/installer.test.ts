@@ -294,6 +294,28 @@ test("setup refuses a managed block shadowed by a higher-priority context file",
   }
 });
 
+test("resolving a Pi instruction file keeps the ambiguity guard", () => {
+  const directory = temporaryDirectory();
+  try {
+    const profile = join(directory, "profile");
+    const agents = join(profile, "AGENTS.md");
+    mkdirSync(profile);
+    const block = `${MANAGED_BLOCK_BEGIN}\n\nold\n\n<!-- END HERDR LINKS -->\n`;
+    writeFileSync(agents, block);
+    // One managed block is unambiguous and both entry points agree.
+    assert.equal(instructionFileFor("pi", { PI_CODING_AGENT_DIR: profile }), agents);
+    assert.equal(cleanupInstructionFile({ PI_CODING_AGENT_DIR: profile }), agents);
+    // A second managed block in a lower-priority file is ambiguous. The legacy
+    // cleanup path refuses it, and the agent-name lookup must refuse it too,
+    // rather than silently cleaning whichever file it happens to check first.
+    writeFileSync(join(profile, "CLAUDE.md"), block);
+    assert.throws(() => cleanupInstructionFile({ PI_CODING_AGENT_DIR: profile }), /multiple Pi context files/u);
+    assert.throws(() => instructionFileFor("pi", { PI_CODING_AGENT_DIR: profile }), /multiple Pi context files/u);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test("failed plugin linking rolls back instruction changes", () => {
   const directory = temporaryDirectory();
   try {

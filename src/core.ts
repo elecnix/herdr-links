@@ -591,7 +591,9 @@ export type InstructionAgent = (typeof INSTRUCTION_AGENTS)[number];
 
 export function instructionFileFor(agent: string, environment: Environment): string {
   if (agent === "claude-code") return claudeCodeMemoryFile(environment);
-  if (agent === "pi") return activeInstructionFile(environment, existingInstructionCandidates(environment));
+  // Go through setupInstructionFile so the ambiguity and shadow guards still apply.
+  // Resolving the Pi file directly would let two managed blocks clean silently.
+  if (agent === "pi") return setupInstructionFile(environment);
   throw new HerdrLinksError(`unsupported agent ${JSON.stringify(agent)}; use one of: ${INSTRUCTION_AGENTS.join(", ")}`);
 }
 
