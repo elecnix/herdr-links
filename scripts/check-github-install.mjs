@@ -69,9 +69,11 @@ try {
   const fakeLog = join(temporaryRoot, "herdr-calls.jsonl");
   const piAgentDirectory = join(temporaryRoot, "pi-agent");
   const xdgConfigHome = join(temporaryRoot, "xdg-config");
+  const claudeConfigDirectory = join(temporaryRoot, "claude-config");
   const registryDirectory = join(xdgConfigHome, "herdr");
   mkdirSync(fakeBin);
   mkdirSync(registryDirectory, { recursive: true });
+  mkdirSync(claudeConfigDirectory, { recursive: true });
   writeFileSync(
     join(registryDirectory, "plugins.json"),
     JSON.stringify([
@@ -107,6 +109,10 @@ if (args.length === 1 && args[0] === "--version") {
     PATH: `${fakeBin}:${environment.PATH ?? ""}`,
     PI_CODING_AGENT_DIR: piAgentDirectory,
     XDG_CONFIG_HOME: xdgConfigHome,
+    // Without this, `setup` and `cleanup` edit the real user memory file at
+    // ~/.claude/CLAUDE.md, and the check's own cleanup strips the block from
+    // the developer's machine.
+    CLAUDE_CONFIG_DIR: claudeConfigDirectory,
     HERDR_BIN_PATH: fakeHerdr,
     FAKE_HERDR_LOG: fakeLog,
     FAKE_PLUGIN_ROOT: checkout,
@@ -117,6 +123,11 @@ if (args.length === 1 && args[0] === "--version") {
   if (!instructions.includes(checkout) || !instructions.includes("<!-- BEGIN HERDR LINKS -->")) {
     throw new Error("setup did not install managed Pi instructions from the managed checkout");
   }
+  const claudeFile = join(claudeConfigDirectory, "CLAUDE.md");
+  const claudeInstructions = readFileSync(claudeFile, "utf8");
+  if (!claudeInstructions.includes(checkout) || !claudeInstructions.includes("<!-- BEGIN HERDR LINKS -->")) {
+    throw new Error("setup did not install managed Claude Code instructions from the managed checkout");
+  }
   const herdrCalls = readFileSync(fakeLog, "utf8")
     .trim()
     .split("\n")
@@ -126,6 +137,7 @@ if (args.length === 1 && args[0] === "--version") {
   }
   run("node", ["./dist/cli.js", "cleanup"], { cwd: checkout, env: setupEnvironment, capture: true });
   if (readFileSync(instructionFile, "utf8") !== "") throw new Error("cleanup left managed Pi instructions behind");
+  if (readFileSync(claudeFile, "utf8") !== "") throw new Error("cleanup left managed Claude Code instructions behind");
 
   console.log("Clean GitHub checkout build and setup/cleanup passed.");
 } finally {
