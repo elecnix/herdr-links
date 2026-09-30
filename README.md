@@ -61,19 +61,21 @@ Ask the agent to reference a live Herdr target. The generated Markdown label bec
 | Tab | Tab ID | Focus the tab and its remembered pane |
 | Pane | Any live pane ID | Focus the exact pane |
 
-Agent names and `terminal_id` values are not accepted. IDs are opaque, case-sensitive, and session-scoped. Always generate a fresh link after Herdr restarts or a target moves or closes.
+Agent names and `terminal_id` values are not accepted. IDs are opaque, case-sensitive, and session-scoped. Always generate a fresh link after a target moves or closes.
 
 Herdr 0.9 links use a private URL scheme:
 
 ```text
-herdr://navigation/v1/<session-fingerprint>/<agent|workspace|tab|pane>/<public-id>
+herdr://navigation/v1/[<session-fingerprint>/]<agent|workspace|tab|pane>/<public-id>
 ```
 
 Herdr 0.7.5 uses a reserved HTTPS compatibility form because that release rejects custom schemes:
 
 ```text
-https://herdr.invalid/v1/<session-fingerprint>/<agent|workspace|tab|pane>/<public-id>
+https://herdr.invalid/v1/[<session-fingerprint>/]<agent|workspace|tab|pane>/<public-id>
 ```
+
+The session fingerprint is optional. When present, it binds the link to the socket which minted it, and the handler refuses the link once Herdr recreates that socket. When absent, the handler skips that comparison, which lets an agent write the link with no tool call. The fingerprint hashes the socket file alone, its path, inode, and change time, so tab, pane, and focus churn leaves it unchanged. Only a socket recreation makes it stale. Omitting it costs the cross-session binding and nothing else, since Herdr never reuses a closed tab or pane ID and every ID includes its workspace prefix, so a stale link fails instead of focusing the wrong place.
 
 ## Security model
 
@@ -81,7 +83,7 @@ A link is a narrowly validated focus request, not a command. Before focusing any
 
 - the complete URL and target-ID grammar
 - the invoking plugin, action, link handler, and source-pane context
-- the user-owned Herdr Unix socket and its current lifetime fingerprint
+- the user-owned Herdr Unix socket, and its lifetime fingerprint when the link carries one
 - the supported Herdr version/protocol pair
 - the live source pane and requested target
 - agent membership for agent links
