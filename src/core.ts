@@ -56,15 +56,30 @@ const CUSTOM_URL_PATTERN = new RegExp(
 );
 
 // Runtime pairs verified against this plugin. A version may pair with more than
-// one protocol across its lifetime, so the pair is matched exactly rather than
-// by version alone. The whole 0.9 line is listed: a patch release does not change
-// the focus methods or snapshot shape this plugin reads, and the upstream gate
-// refusing 0.9.1 while the protocol is unchanged was the reason for this fork.
-const SUPPORTED_RUNTIMES = new Set(["0.7.5/18", "0.9.0/22", "0.9.1/22", "0.9.2/22", "0.9.3/22"]);
-const SUPPORTED_CLI_VERSIONS = new Set(["herdr 0.7.5", "herdr 0.9.0", "herdr 0.9.1", "herdr 0.9.2", "herdr 0.9.3"]);
+// one protocol across its lifetime, so the protocol is matched with the version.
+// Any 0.9 patch release on protocol 22 is accepted: a patch release does not change
+// the focus methods or snapshot shape this plugin reads, and a protocol bump is the
+// signal that does. Gating each patch by hand left links dead after every update.
+const LEGACY_RUNTIME = { version: "0.7.5", protocol: 18 } as const;
+const NINE_LINE_PROTOCOL = 22;
+const NINE_LINE_VERSION = /^0\.9\.(?:0|[1-9][0-9]*)$/;
+const NINE_LINE_CLI = /^herdr (0\.9\.(?:0|[1-9][0-9]*))$/;
+const SUPPORTED_RUNTIMES_TEXT = "0.7.5/18, 0.9.x/22";
+
+function isSupportedRuntime(version: string, protocol: number): boolean {
+  if (version === LEGACY_RUNTIME.version) return protocol === LEGACY_RUNTIME.protocol;
+  return NINE_LINE_VERSION.test(version) && protocol === NINE_LINE_PROTOCOL;
+}
+
+function isSupportedCliVersion(output: string): boolean {
+  return output === `herdr ${LEGACY_RUNTIME.version}` || NINE_LINE_CLI.test(output);
+}
+
 // The scheme a 0.9.x runtime uses for a private OSC 8 target. The legacy 0.7.5
 // line keeps the reserved HTTPS form because that release rejects custom schemes.
-const CUSTOM_SCHEME_VERSIONS = new Set(["0.9.0", "0.9.1", "0.9.2", "0.9.3"]);
+function usesCustomScheme(version: string): boolean {
+  return NINE_LINE_VERSION.test(version);
+}
 const FOCUS_METHODS: Readonly<Record<TargetKind, readonly [string, string, string]>> = {
   agent: ["pane.focus", "pane_id", "pane_info"],
   workspace: ["workspace.focus", "workspace_id", "workspace_info"],
@@ -235,7 +250,7 @@ export function formatNavigationUrl(kind: string, target: string, fingerprint: s
   validateTarget(kind, target);
   if (!/^[0-9a-f]{64}$/u.test(fingerprint)) throw new HerdrLinksError("invalid session fingerprint");
   if (version === "0.7.5") return `https://herdr.invalid/v1/${fingerprint}/${kind}/${target}`;
-  if (CUSTOM_SCHEME_VERSIONS.has(version)) return `herdr://navigation/v1/${fingerprint}/${kind}/${target}`;
+  if (usesCustomScheme(version)) return `herdr://navigation/v1/${fingerprint}/${kind}/${target}`;
   throw new HerdrLinksError(`unsupported Herdr ${version}; cannot choose a safe link scheme`);
 }
 
@@ -348,9 +363,9 @@ export async function getSnapshot(socketPath: string): Promise<JsonObject> {
   if (!isRecord(snapshot)) throw new HerdrApiError("missing Herdr session snapshot");
   const version = snapshot["version"];
   const protocol = snapshot["protocol"];
-  if (typeof version !== "string" || typeof protocol !== "number" || !SUPPORTED_RUNTIMES.has(`${version}/${protocol}`)) {
+  if (typeof version !== "string" || typeof protocol !== "number" || !isSupportedRuntime(version, protocol)) {
     throw new HerdrLinksError(
-      `unsupported Herdr ${String(version)} protocol ${String(protocol)}; verified runtimes: ${[...SUPPORTED_RUNTIMES].join(", ")}`,
+      `unsupported Herdr ${String(version)} protocol ${String(protocol)}; verified runtimes: ${SUPPORTED_RUNTIMES_TEXT}`,
     );
   }
   for (const key of ["panes", "workspaces", "tabs", "agents"] as const) {
@@ -437,7 +452,7 @@ export async function handleNavigation(environment: Environment): Promise<JsonOb
     throw new HerdrLinksError("link belongs to a different Herdr session or socket lifetime; regenerate it");
   }
   const snapshot = await getSnapshot(socketPath);
-  if (url.startsWith("herdr://") && !CUSTOM_SCHEME_VERSIONS.has(requiredString(snapshot["version"], "invalid snapshot version"))) {
+  if (url.startsWith("herdr://") && !usesCustomScheme(requiredString(snapshot["version"], "invalid snapshot version"))) {
     throw new HerdrLinksError("custom navigation targets require a Herdr 0.9 line runtime; regenerate this link");
   }
   const focusedPaneId = requiredString(context["focused_pane_id"], "invalid click context focused_pane_id");
@@ -831,8 +846,8 @@ function sameStoredRegistration(left: JsonObject | undefined, right: JsonObject 
 
 function validateHerdrCli(binary: string, runner: CliRunner): void {
   const version = runCli(binary, ["--version"], runner).trim();
-  if (!SUPPORTED_CLI_VERSIONS.has(version)) {
-    throw new HerdrLinksError(`unsupported CLI ${version}; verified CLIs: ${[...SUPPORTED_CLI_VERSIONS].join(", ")}`);
+  if (!isSupportedCliVersion(version)) {
+    throw new HerdrLinksError(`unsupported CLI ${version}; verified CLIs: herdr 0.7.5, herdr 0.9.x`);
   }
 }
 

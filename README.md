@@ -4,12 +4,12 @@
 
 Herdr Links creates secure, session-bound links to agents, workspaces, tabs, and panes in [Herdr](https://herdr.dev). An agent that renders OSC 8 links can display them, so reports from [Pi](https://github.com/badlogic/pi-mono/tree/main/packages/coding-agent) and Claude Code both become navigable.
 
-Beyond upstream, this fork accepts the whole Herdr 0.9 line on protocol 22, versions 0.9.0 through 0.9.3, instead of one runtime pair, so a Herdr patch release does not stop link generation or navigation. It also installs instructions for Claude Code alongside Pi instead of Pi alone.
+Beyond upstream, this fork accepts the whole Herdr 0.9 line on protocol 22, every 0.9 patch release, instead of one runtime pair, so a Herdr patch release does not stop link generation or navigation. It also installs instructions for Claude Code alongside Pi instead of Pi alone.
 
 ## Requirements
 
 - macOS
-- Herdr 0.7.5, or any 0.9 release from 0.9.0 through 0.9.3
+- Herdr 0.7.5, or any 0.9 patch release
 - Node.js 20 or newer, available whenever Herdr, Pi, or Claude Code runs the plugin
 - npm, required during installation and updates
 - Pi or Claude Code, if you want agents to generate navigation links automatically
@@ -93,7 +93,7 @@ The handler then sends one allowlisted focus API call. It does not invoke a shel
 
 The fingerprint is a lifetime marker derived from the resolved socket's path and metadata; it is not an authentication secret. The plugin is not a security boundary against another process running as the same operating-system user, because that process already has access to the user's Herdr socket. The runtime makes no HTTP requests.
 
-Only the 0.9 line on protocol 22, versions 0.9.0 through 0.9.3, and Herdr 0.7.5 on protocol 18 are accepted. A version paired with any other protocol fails closed until it has been reviewed and tested.
+Only 0.9 patch releases on protocol 22, and Herdr 0.7.5 on protocol 18 are accepted. A version paired with any other protocol fails closed until it has been reviewed and tested.
 
 ## Uninstall
 
