@@ -585,6 +585,8 @@ test("the 0.9 line and the 0.7.5 compatibility runtime are accepted", async () =
       ["0.9.1", 22],
       ["0.9.2", 22],
       ["0.9.3", 22],
+      ["0.9.5", 22],
+      ["0.9.12", 22],
     ] as const) {
       const path = join(directory, `herdr-${version}.sock`);
       const snapshot = { ...SNAPSHOT, version, protocol };
